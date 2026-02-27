@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* Chế độ Sáng (Mặc định - Màu Brutal gốc) */
   --color-brand-bg: #161f2b;
   --color-brand-panel: #1b2431;
   --color-brand-blue: #1d90f5;
@@ -8,6 +9,20 @@
   --shadow-brutal: 4px 4px 0px 0px #000000;
   --shadow-brutal-hover: 2px 2px 0px 0px #000000;
   --shadow-brutal-active: 0px 0px 0px 0px #000000;
+  --font-jaro: var(--font-jaro);
+}
+
+/* Chế độ Tối (Neon Cyberpunk) */
+.dark {
+  --color-brand-bg: #050505;
+  --color-brand-panel: #111111;
+  --color-brand-blue: #00f0ff;
+  /* Cyan rực rỡ */
+  --color-brand-pink: #ff0055;
+  /* Hồng dạ quang */
+  --shadow-brutal: 0 0 8px var(--color-brand-blue), inset 0 0 8px var(--color-brand-blue);
+  --shadow-brutal-hover: 0 0 15px var(--color-brand-pink), inset 0 0 10px var(--color-brand-pink);
+  --shadow-brutal-active: 0 0 4px var(--color-brand-pink);
 }
 
 .brutal-border {
@@ -99,4 +114,28 @@ body {
 
 .tape-wheel-paused {
   animation-play-state: paused;
+}
+
+@keyframes bounce-slow {
+
+  0%,
+  100% {
+    transform: translateY(-5%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }

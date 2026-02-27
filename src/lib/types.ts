@@ -6,4 +6,6 @@ export interface Song {
     thumbnail_url: string;
     added_by: string; // Tên người gửi lời yêu cầu
     is_played: boolean; // Trạng thái: đang chờ / đã phát
+    upvotes?: number;
+    downvotes?: number;
 }
