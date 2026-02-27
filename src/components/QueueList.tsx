@@ -3,31 +3,30 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Song } from '@/lib/types';
-import { FiPlayCircle, FiHeadphones, FiClock } from 'react-icons/fi';
+import { FiChevronUp, FiX, FiMonitor } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function QueueList() {
     const [queue, setQueue] = useState<Song[]>([]);
 
     useEffect(() => {
-        // Lấy bài hát ngay lúc đầu
         const fetchQueue = async () => {
             const { data, error } = await supabase
                 .from('queue')
                 .select('*')
                 .eq('is_played', false)
-                .order('id', { ascending: true }); // ID là uuid, hoặc created_at, có order_index
+                .order('order_index', { ascending: true })
+                // Bỏ qua bài đầu tiên vì bài đầu đang hát ở Player
+                .range(1, 100);
+
             if (!error && data) setQueue(data);
         };
 
         fetchQueue();
 
-        // Lắng nghe thay đổi real-time
         const channel = supabase
-            .channel('public:queue')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, (payload) => {
-                // Có thể tối ưu bằng cách handle tưng event INSERT, UPDATE, DELETE
-                // Nhưng gọi lại fetchQueue cho chắc chắn đồng bộ
+            .channel('public:queue:list')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => {
                 fetchQueue();
             })
             .subscribe();
@@ -37,67 +36,59 @@ export default function QueueList() {
         };
     }, []);
 
-    if (queue.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center p-12 text-zinc-500 bg-zinc-900/30 rounded-2xl border border-zinc-800 border-dashed">
-                <FiHeadphones className="text-4xl mb-3 opacity-50" />
-                <p>Hàng đợi đang trống</p>
-                <p className="text-sm">Hãy gửi link bài hát đầu tiên nhé!</p>
-            </div>
-        );
-    }
-
     return (
-        <div className="flex flex-col gap-3">
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-2 text-zinc-200">
-                <FiClock className="text-rose-500" />
-                Danh sách chờ phát ({queue.length})
-            </h3>
+        <div className="flex flex-col gap-4 mt-4">
+            <div className="flex items-end justify-between border-b-4 border-black pb-2">
+                <h3 className="text-2xl font-oswald font-bold italic tracking-wider">UP NEXT</h3>
+                <span className="text-sm font-oswald tracking-widest text-gray-400 font-bold uppercase">{queue.length} TRACKS REMAINING</span>
+            </div>
 
-            <div className="flex flex-col gap-3">
-                <AnimatePresence>
-                    {queue.map((song, index) => (
-                        <motion.div
-                            layout
-                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, height: 0 }}
-                            key={song.id}
-                            className={`flex items-center gap-4 p-3 rounded-xl border transition-all ${index === 0
-                                    ? 'bg-rose-500/10 border-rose-500/30 shadow-lg shadow-rose-500/5'
-                                    : 'bg-zinc-900/50 border-zinc-800'
-                                }`}
-                        >
-                            <div className="relative w-16 h-12 bg-zinc-800 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
-                                {song.thumbnail_url ? (
-                                    <img src={song.thumbnail_url} alt={song.title} className="w-full h-full object-cover" />
-                                ) : (
-                                    <FiMusic className="text-zinc-500" />
-                                )}
-                                {index === 0 && (
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                        <FiPlayCircle className="text-rose-400 text-xl animate-pulse" />
+            <div className="flex flex-col gap-4">
+                {queue.length === 0 ? (
+                    <div className="brutal-panel p-6 text-center text-gray-500">
+                        <FiMonitor className="text-4xl mx-auto mb-2 opacity-50" />
+                        <p className="font-oswald tracking-wider">NO MORE TRACKS IN QUEUE</p>
+                    </div>
+                ) : (
+                    <AnimatePresence>
+                        {queue.map((song, index) => (
+                            <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                key={song.id}
+                                className="brutal-panel bg-brand-bg flex items-center justify-between p-3 brutal-shadow-hover cursor-pointer"
+                            >
+                                <div className="flex items-center gap-4 overflow-hidden">
+                                    <div className="w-12 h-12 bg-gray-800 brutal-border shrink-0 flex items-center justify-center overflow-hidden">
+                                        {song.thumbnail_url ? (
+                                            <img src={song.thumbnail_url} alt={song.title} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-brand-blue" />
+                                        )}
                                     </div>
-                                )}
-                            </div>
 
-                            <div className="flex flex-col overflow-hidden">
-                                <p className={`font-medium line-clamp-1 ${index === 0 ? 'text-rose-100' : 'text-zinc-200'}`}>
-                                    {song.title}
-                                </p>
-                                <p className="text-sm text-zinc-500 truncate">
-                                    Từ: <span className="text-zinc-400">{song.added_by}</span>
-                                </p>
-                            </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
+                                    <div className="flex flex-col overflow-hidden">
+                                        <p className="font-oswald text-lg font-bold tracking-wide truncate uppercase">{song.title}</p>
+                                        <p className="text-xs font-oswald tracking-widest text-gray-400 uppercase truncate">
+                                            HOME • {song.added_by}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-2 shrink-0 ml-2">
+                                    <button className="text-gray-500 hover:text-white transition-colors">
+                                        <FiChevronUp size={20} />
+                                    </button>
+                                    <button className="text-gray-500 hover:text-brand-pink transition-colors">
+                                        <FiX size={20} />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                )}
             </div>
         </div>
     );
-}
-
-// Inline Icon to avoid import issue in the middle of code
-function FiMusic(props: any) {
-    return <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" {...props}><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>;
 }

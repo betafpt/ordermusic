@@ -1,35 +1,30 @@
 import FormInput from "@/components/FormInput";
 import QueueList from "@/components/QueueList";
 import Player from "@/components/Player";
-import { FiMusic } from "react-icons/fi";
 
 export default function Home() {
   return (
-    <div className="min-h-screen p-4 md:p-8 flex flex-col gap-8">
-      {/* Header */}
-      <header className="flex flex-col items-center justify-center text-center space-y-2 py-4 md:py-8">
-        <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-rose-500/20 mb-2">
-          <FiMusic className="text-3xl text-white" />
-        </div>
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
-          Music Queue System
-        </h1>
-        <p className="text-zinc-400 max-w-md mx-auto">
-          Cùng nhau tạo nên một playlist tuyệt vời. Gửi link bài hát bạn thích và âm nhạc sẽ được phát tự động.
-        </p>
-      </header>
+    <div className="grid grid-cols-1 lg:grid-cols-[2.25fr_1fr] gap-6 lg:gap-8">
+      {/* Cột trái: Player & Info */}
+      <div className="flex flex-col gap-6 w-full h-full min-w-0">
+        <Player />
+      </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-5xl mx-auto w-full">
-        {/* Cột trái: Form & Queue (Chiếm 5 phần) */}
-        <div className="lg:col-span-5 flex flex-col gap-8 order-2 lg:order-1">
-          <FormInput />
-          <QueueList />
-        </div>
+      {/* Cột phải: Form & Queue & Stats */}
+      <div className="flex flex-col gap-6 w-full min-w-0">
+        <FormInput />
+        <QueueList />
 
-        {/* Cột phải: Player (Chiếm 7 phần) */}
-        <div className="lg:col-span-7 order-1 lg:order-2 sticky top-8">
-          <Player />
+        {/* Stats Section */}
+        <div className="grid grid-cols-2 gap-4 mt-auto">
+          <div className="brutal-panel bg-brand-pink border-4 border-black p-4 text-white">
+            <p className="text-xs font-oswald font-black uppercase tracking-wider mb-1">Listeners</p>
+            <p className="text-4xl font-oswald font-bold leading-none">128</p>
+          </div>
+          <div className="brutal-panel bg-brand-panel border-4 border-black p-4 text-white">
+            <p className="text-xs font-oswald font-black uppercase tracking-wider text-gray-400 mb-1">Queue Time</p>
+            <p className="text-4xl font-oswald font-bold leading-none">18m</p>
+          </div>
         </div>
       </div>
     </div>
