@@ -11,10 +11,9 @@ export default function Home() {
       {/* Cột trái: Player & Info & Chat */}
       <div className="flex flex-col gap-6 w-full h-full min-w-0">
 
-        {/* Hàng trên cùng: Màn hình trình chiếu (Player) & Khung chat */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-6 items-stretch">
+        {/* Hàng trên cùng: Màn hình trình chiếu (Player) */}
+        <div className="w-full">
           <Player />
-          <ChatBox />
         </div>
 
         {/* Lịch sử và Bảng xếp hạng bên dưới Player */}
