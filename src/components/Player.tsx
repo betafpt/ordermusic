@@ -236,9 +236,9 @@ export default function Player() {
             )}
 
             {/* Phần Video Player (Màn hình CRT ảo, Brutalist TV) */}
-            <div className="brutal-panel bg-brand-panel p-4 flex flex-col xl:flex-row gap-6">
+            <div className="brutal-panel bg-brand-panel p-4 grid grid-cols-1 lg:grid-cols-[2fr_1fr] xl:grid-cols-[2.5fr_1fr] gap-6">
                 {/* Cột trái TV: bao gồm Màn Hình + Sóng Nhạc bên dưới */}
-                <div className="flex flex-col gap-2 flex-1 min-w-0">
+                <div className="flex flex-col gap-2 w-full min-w-0">
                     {/* Màn hình TV thay cho Cassette tape cũ */}
                     <div className="brutal-border bg-black relative w-full aspect-video flex items-center justify-center p-2">
                         {/* Retro TV Bezel/Frame */}
@@ -587,7 +587,7 @@ export default function Player() {
                 </div>
 
                 {/* Khung chat bên phải (Tự động xuống hàng nếu màn hình nhỏ) */}
-                <div className="w-full xl:w-[350px] min-h-[400px] flex-shrink-0 flex flex-col bg-brand-panel brutal-border relative overflow-hidden">
+                <div className="w-full xl:w-[320px] 2xl:w-[380px] flex-shrink-0">
                     <ChatBox />
                 </div>
             </div>
