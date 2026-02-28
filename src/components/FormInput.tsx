@@ -63,6 +63,9 @@ export default function FormInput() {
                 if (data?.error === 'J97_BLOCKED') {
                     throw new Error('J97_BLOCKED');
                 }
+                if (data?.error === 'TOO_LONG_BLOCKED') {
+                    throw new Error('TOO_LONG_BLOCKED');
+                }
                 throw new Error('Không thể đọc thông tin track');
             }
 
