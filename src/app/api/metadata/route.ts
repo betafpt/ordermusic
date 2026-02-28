@@ -45,9 +45,16 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Unsupported URL format' }, { status: 400 });
         }
 
+        const lowerTitle = title.toLowerCase();
+
         // Chặn nhạc nonstop
-        if (title.toLowerCase().includes('nonstop')) {
+        if (lowerTitle.includes('nonstop')) {
             return NextResponse.json({ error: 'NONSTOP_BLOCKED' }, { status: 400 });
+        }
+
+        // Chặn J97, Jack97
+        if (lowerTitle.includes('j97') || lowerTitle.includes('jack') || lowerTitle.includes('đom đóm') || lowerTitle.includes('hồng nhan') || lowerTitle.includes('bạc phận') || lowerTitle.includes('sóng gió')) {
+            return NextResponse.json({ error: 'J97_BLOCKED' }, { status: 400 });
         }
 
         return NextResponse.json({ title, thumbnailUrl, cleanUrl });

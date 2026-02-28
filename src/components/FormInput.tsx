@@ -10,6 +10,7 @@ export default function FormInput() {
     const [savedUsername, setSavedUsername] = useState('');
     const [loading, setLoading] = useState(false);
     const [showNonstopError, setShowNonstopError] = useState(false);
+    const [showJ97Error, setShowJ97Error] = useState(false);
     const { isAdmin } = useAdmin();
 
     useEffect(() => {
@@ -58,6 +59,9 @@ export default function FormInput() {
                 if (data?.error === 'NONSTOP_BLOCKED') {
                     throw new Error('NONSTOP_BLOCKED');
                 }
+                if (data?.error === 'J97_BLOCKED') {
+                    throw new Error('J97_BLOCKED');
+                }
                 throw new Error('Không thể đọc thông tin track');
             }
 
@@ -99,6 +103,11 @@ export default function FormInput() {
             if (error.message && error.message.includes('NONSTOP_BLOCKED')) {
                 toast.dismiss(toastId); // Tắt thông báo bé xíu
                 setShowNonstopError(true); // Bật thông báo chặn to đùng
+            }
+            // Nếu lỗi là do chặn J97/Jack
+            else if (error.message && error.message.includes('J97_BLOCKED')) {
+                toast.dismiss(toastId);
+                setShowJ97Error(true);
             }
             // Nếu lỗi là do Spam quá 2 bài
             else if (error.message && error.message.includes('SPAM_BLOCKED')) {
@@ -188,6 +197,32 @@ export default function FormInput() {
                             style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}
                         >
                             ĐÃ RÕ CƯNG 🫡
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Cấm J97 Hiện Giữa Màn Hình */}
+            {showJ97Error && (
+                <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="brutal-panel bg-yellow-400 border-[8px] border-black p-8 md:p-12 max-w-2xl w-full text-center relative overflow-hidden shadow-[20px_20px_0px_0px_rgba(255,255,255,0.1)]">
+                        <div className="absolute inset-0 bg-white opacity-0 animate-[shimmer_0.5s_infinite] pointer-events-none"></div>
+
+                        <h2 className="text-5xl md:text-7xl uppercase text-black tracking-widest leading-[0.9] drop-shadow-[4px_4px_0px_#fff] rotate-[-2deg] mb-6 relative z-10" style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}>
+                            ÉC ÉC ÉC 🌻
+                        </h2>
+
+                        <p className="font-oswald text-xl md:text-2xl font-black uppercase text-white bg-[#ff0055] p-4 brutal-border rotate-[1deg] mb-8 leading-tight relative z-10">
+                            Hệ thống phát hiện Đóm Con cắn cáp! 🚫<br />
+                            <span className="text-lg text-black bg-white px-2 mt-2 inline-block">Sóng gió phủ đời trai, tương lai nhờ... bài khác nhé!</span>
+                        </p>
+
+                        <button
+                            onClick={() => setShowJ97Error(false)}
+                            className="text-3xl md:text-4xl text-yellow-400 bg-black py-4 px-12 uppercase tracking-widest hover:bg-white hover:text-black transition-colors brutal-border hover:scale-105 active:scale-95 relative z-10"
+                            style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}
+                        >
+                            QUAY XE 🏃‍♂️
                         </button>
                     </div>
                 </div>
