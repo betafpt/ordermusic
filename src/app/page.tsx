@@ -8,9 +8,14 @@ import ChatBox from "@/components/ChatBox";
 export default function Home() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[2.25fr_1fr] gap-6 lg:gap-8">
-      {/* Cột trái: Player & Info */}
+      {/* Cột trái: Player & Info & Chat */}
       <div className="flex flex-col gap-6 w-full h-full min-w-0">
-        <Player />
+
+        {/* Hàng trên cùng: Màn hình trình chiếu (Player) & Khung chat */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_350px] gap-6 items-stretch">
+          <Player />
+          <ChatBox />
+        </div>
 
         {/* Lịch sử và Bảng xếp hạng bên dưới Player */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
@@ -24,9 +29,6 @@ export default function Home() {
       <div className="flex flex-col gap-6 w-full min-w-0">
         <FormInput />
         <QueueList />
-
-        {/* Khung Chat Trực Tuyến */}
-        <ChatBox />
 
         {/* Stats Section */}
         <div className="grid grid-cols-2 gap-4 mt-2">
