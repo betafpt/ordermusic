@@ -18,9 +18,9 @@ export default function Leaderboard() {
                 // Tính toán số lượng bài hát đóng góp của mỗi người
                 const counts: Record<string, number> = {};
                 data.forEach(song => {
-                    // Nếu trường added_by bị nhầm là tên bài hát (do form input lỗi trước đây), ta chặn bớt các cái tên quá dài hoặc có gạch nối
+                    // Nếu trường added_by bị nhầm là tên bài hát (do form input lỗi trước đây), ta chặn bớt các cái tên quá dài 
                     const name = song.added_by || 'KHÁCH ẨN DANH';
-                    if (name.length > 30 || name.includes(' - ')) return; // Bỏ qua nếu có vẻ là tên bài hát
+                    if (name.length > 50) return; // Bỏ qua nếu tên dài quá 50 ký tự (có vẻ là tiêu đề)
                     counts[name] = (counts[name] || 0) + 1;
                 });
 
