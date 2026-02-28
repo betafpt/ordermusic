@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import ReactPlayer from 'react-player';
 import { supabase } from '@/lib/supabase';
-import { Song } from '@/lib/types';
+import { Song, Vote } from '@/lib/types';
 import { FiUser, FiPlay, FiPause, FiSkipForward } from 'react-icons/fi';
 import { AiOutlineArrowUp, AiOutlineArrowDown } from 'react-icons/ai';
 import { toast } from 'sonner';
@@ -24,6 +24,13 @@ export default function Player() {
     const [isSpeaking, setIsSpeaking] = useState(false); // Trạng thái "Đang thu âm/Đọc"
     const [volume, setVolume] = useState(1); // 0.0 to 1.0
     const [isMCEnabled, setIsMCEnabled] = useState(true);
+
+    // Lưu những người đã vote cho bài đang phát
+    const [voters, setVoters] = useState<{ up: string[], down: string[] }>({ up: [], down: [] });
+    // Trạng thái mờ/rõ Tooltip
+    const [showUpVotes, setShowUpVotes] = useState(false);
+    const [showDownVotes, setShowDownVotes] = useState(false);
+
     const isMCEnabledRef = useRef(true);
     const playerRef = useRef<any>(null);
     const { isAdmin } = useAdmin();
@@ -107,6 +114,7 @@ export default function Player() {
 
                     // Nếu id trùng nhau (cùng bài hát đó), nhưng có thay đổi về upvote, downvote từ database Realtime
                     if (prev?.upvotes !== data.upvotes || prev?.downvotes !== data.downvotes) {
+                        fetchVoters(data.id); // Tải lại danh sách người vote khi bộ đếm bị thay đổi
                         return data;
                     }
 
@@ -114,6 +122,20 @@ export default function Player() {
                 });
             } else {
                 setCurrentSong(null);
+                setVoters({ up: [], down: [] });
+            }
+        };
+
+        const fetchVoters = async (songId: string) => {
+            const { data, error } = await supabase
+                .from('votes')
+                .select('voter_name, vote_type')
+                .eq('song_id', songId);
+
+            if (!error && data) {
+                const ups = data.filter(v => v.vote_type === 'up').map(v => v.voter_name);
+                const downs = data.filter(v => v.vote_type === 'down').map(v => v.voter_name);
+                setVoters({ up: ups, down: downs });
             }
         };
 
@@ -442,32 +464,80 @@ export default function Player() {
 
                     {/* VOTE BUTTONS đưa lên sát bên Tên Người Đóng Góp */}
                     {currentSong && (
-                        <div className="flex items-center gap-3 ml-2 lg:ml-6">
-                            <button
-                                onClick={async () => {
-                                    if (!currentSong) return;
-                                    const { error } = await supabase.rpc('increment_upvote', { row_id: currentSong.id });
-                                    if (!error) toast.success("Đã Vote 1 vé cho bài này!");
-                                }}
-                                className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-green-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
-                                title="Nghe Rất Cuốn!"
-                            >
-                                <span className="absolute -top-2 -right-2 bg-green-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.upvotes || 0}</span>
-                                <span className="text-xl group-hover:animate-bounce">👍</span>
-                            </button>
+                        <div className="flex items-center gap-3 ml-2 lg:ml-6 relative">
+                            {/* Nút thả tim / Upvote */}
+                            <div className="relative" onMouseEnter={() => setShowUpVotes(true)} onMouseLeave={() => setShowUpVotes(false)}>
+                                <button
+                                    onClick={async () => {
+                                        if (!currentSong) return;
+                                        const voterName = localStorage.getItem('userName') || 'Khách Ẩn Danh';
 
-                            <button
-                                onClick={async () => {
-                                    if (!currentSong) return;
-                                    const { error } = await supabase.rpc('increment_downvote', { row_id: currentSong.id });
-                                    if (!error) toast.success("Đã chê bài hát này!");
-                                }}
-                                className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-red-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
-                                title="Nghe Hơi Tệ"
-                            >
-                                <span className="absolute -top-2 -right-2 bg-red-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.downvotes || 0}</span>
-                                <span className="text-xl group-hover:animate-bounce">👎</span>
-                            </button>
+                                        // Gửi v_name lên theo Hàm SQL mới
+                                        const { error } = await supabase.rpc('increment_upvote', {
+                                            row_id: currentSong.id,
+                                            v_name: voterName
+                                        });
+                                        if (!error) toast.success("Đã Vote 1 vé cho bài này!");
+                                        else toast.error("Cần cập nhật Database để lưu tên Vote");
+                                    }}
+                                    className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-green-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
+                                    title="Nghe Rất Cuốn!"
+                                >
+                                    <span className="absolute -top-2 -right-2 bg-green-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.upvotes || 0}</span>
+                                    <span className="text-xl group-hover:animate-bounce">👍</span>
+                                </button>
+
+                                {/* Bảng danh sách người UPVOTE (Tooltip) */}
+                                {showUpVotes && voters.up.length > 0 && (
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
+                                        <div className="text-[10px] text-green-400 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
+                                            ĐÃ THẢ TIM:
+                                        </div>
+                                        <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
+                                            {voters.up.map((name, idx) => (
+                                                <span key={idx} className="text-xs font-oswald text-white uppercase truncate">• {name}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Nút ném đá / Downvote */}
+                            <div className="relative" onMouseEnter={() => setShowDownVotes(true)} onMouseLeave={() => setShowDownVotes(false)}>
+                                <button
+                                    onClick={async () => {
+                                        if (!currentSong) return;
+                                        const voterName = localStorage.getItem('userName') || 'Khách Ẩn Danh';
+
+                                        // Gửi v_name lên theo Hàm SQL mới
+                                        const { error } = await supabase.rpc('increment_downvote', {
+                                            row_id: currentSong.id,
+                                            v_name: voterName
+                                        });
+                                        if (!error) toast.success("Đã chê bài hát này!");
+                                        else toast.error("Cần cập nhật Database để lưu tên Vote");
+                                    }}
+                                    className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-red-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
+                                    title="Nghe Hơi Tệ"
+                                >
+                                    <span className="absolute -top-2 -right-2 bg-red-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.downvotes || 0}</span>
+                                    <span className="text-xl group-hover:animate-bounce">👎</span>
+                                </button>
+
+                                {/* Bảng danh sách người DOWNVOTE (Tooltip) */}
+                                {showDownVotes && voters.down.length > 0 && (
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
+                                        <div className="text-[10px] text-red-500 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
+                                            ĐÃ NÉM ĐÁ:
+                                        </div>
+                                        <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
+                                            {voters.down.map((name, idx) => (
+                                                <span key={idx} className="text-xs font-oswald text-white uppercase truncate">• {name}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

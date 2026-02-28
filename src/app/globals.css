@@ -139,3 +139,22 @@ body {
     transform: translateX(100%);
   }
 }
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: black;
+  border-left: 2px solid #333;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-brand-blue);
+  border: 2px solid black;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-pink);
+}

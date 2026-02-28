@@ -9,3 +9,11 @@ export interface Song {
     upvotes?: number;
     downvotes?: number;
 }
+
+export interface Vote {
+    id: string;
+    song_id: string;
+    voter_name: string;
+    vote_type: 'up' | 'down';
+    created_at: string;
+}
