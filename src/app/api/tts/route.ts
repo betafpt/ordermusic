@@ -15,8 +15,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
         }
 
-        // Chọn một Voice ID mặc định của ElevenLabs (Ví dụ: Rachel - 21m00Tcm4TlvDq8ikWAM)
-        const voiceId = '21m00Tcm4TlvDq8ikWAM';
+        // Chọn Voice ID của Bella (đọc Tiếng Việt cảm xúc và rõ ràng hơn)
+        const voiceId = 'EXAVITQu4vr4xnSDxMaL';
 
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
             method: 'POST',
