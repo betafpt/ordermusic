@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import ThemeToggle from "@/components/ThemeToggle";
 import LoginButton from "@/components/LoginButton";
 import LiveCounter from "@/components/LiveCounter";
+import LiveUpdateListener from "@/components/LiveUpdateListener";
 
 const inter = Inter({ subsets: ["latin", "vietnamese"], variable: '--font-inter' });
 const oswald = Oswald({ subsets: ["latin", "vietnamese"], variable: '--font-oswald' });
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning>
       <body className={`${inter.variable} ${oswald.variable} ${jaro.variable} font-sans min-h-screen antialiased selection:bg-brand-pink selection:text-white overflow-x-hidden`}>
+        <LiveUpdateListener />
         <main className="max-w-[1400px] mx-auto min-h-screen p-4 md:p-8 overflow-x-hidden">
           {/* Top Bar */}
           <header className="brutal-panel p-4 flex flex-wrap items-center justify-between gap-4 mb-8">

@@ -23,8 +23,14 @@ export default function Player() {
     const [isMounted, setIsMounted] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false); // Trạng thái "Đang thu âm/Đọc"
     const [volume, setVolume] = useState(1); // 0.0 to 1.0
+    const [isMCEnabled, setIsMCEnabled] = useState(true);
+    const isMCEnabledRef = useRef(true);
     const playerRef = useRef<any>(null);
     const { isAdmin } = useAdmin();
+
+    useEffect(() => {
+        isMCEnabledRef.current = isMCEnabled;
+    }, [isMCEnabled]);
 
     // Hàm gọi dàn Loa Phường của chị Google lên đọc văn bản, đọc xong trả về Promise resolve
     const playTTS = (text: string): Promise<void> => {
@@ -83,7 +89,7 @@ export default function Player() {
                     // Nếu là bài nhảy mới
                     if (prev?.id !== data.id) {
                         // Nếu là Host, cho phép Giọng đọc Google lên phát thanh
-                        if (isAdmin) {
+                        if (isAdmin && isMCEnabledRef.current) {
                             const nameParts = getDisplayTitles(data.title);
                             const textToRead = `Tiếp theo là bài hát: ${nameParts.main}, do ${data.added_by} đóng góp. Mời quý vị thưởng thức!`;
 
@@ -322,22 +328,62 @@ export default function Player() {
                         </button>
                     </div>
 
-                    {/* Thanh chỉnh Âm lượng giành riêng cho Admin */}
+                    {/* Các tính năng giành riêng cho Admin */}
                     {isAdmin && (
-                        <div className="flex flex-col gap-1 mt-4 brutal-border bg-black p-4">
-                            <span className="text-[10px] text-brand-blue font-bold tracking-widest uppercase mb-2">ĐIỀU CHỈNH ÂM LƯỢNG MÁY CHỦ</span>
-                            <div className="flex items-center gap-4">
-                                <span className="font-oswald font-bold text-gray-500 text-sm">MIN</span>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.05"
-                                    value={volume}
-                                    onChange={(e) => setVolume(parseFloat(e.target.value))}
-                                    className="flex-1 h-3 bg-gray-700 brutal-border appearance-none cursor-pointer accent-brand-pink"
-                                />
-                                <span className="font-oswald font-bold text-brand-pink text-sm">MAX</span>
+                        <div className="flex flex-col gap-4 mt-4 brutal-border bg-black p-4">
+                            {/* Thanh chỉnh Âm lượng */}
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[10px] text-brand-blue font-bold tracking-widest uppercase mb-2">ĐIỀU CHỈNH ÂM LƯỢNG MÁY CHỦ</span>
+                                <div className="flex items-center gap-4">
+                                    <span className="font-oswald font-bold text-gray-500 text-sm">MIN</span>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={volume}
+                                        onChange={(e) => setVolume(parseFloat(e.target.value))}
+                                        className="flex-1 h-3 bg-gray-700 brutal-border appearance-none cursor-pointer accent-brand-pink"
+                                    />
+                                    <span className="font-oswald font-bold text-brand-pink text-sm">MAX</span>
+                                </div>
+                            </div>
+
+                            {/* Bật / Tắt MC Ảo */}
+                            <div className="flex flex-col gap-1 pt-4 border-t-2 border-dashed border-gray-700">
+                                <span className="text-[10px] text-brand-blue font-bold tracking-widest uppercase mb-2">MC ẢO GIỚI THIỆU BÀI HÁT</span>
+                                <button
+                                    onClick={() => setIsMCEnabled(!isMCEnabled)}
+                                    className={`w-full h-10 border-[3px] flex items-center justify-center font-oswald text-sm font-bold tracking-widest uppercase transition-colors ${isMCEnabled
+                                        ? 'bg-brand-pink text-black border-black hover:bg-white hover:text-black'
+                                        : 'bg-gray-800 text-gray-400 border-gray-600 hover:bg-gray-700 hover:text-white'
+                                        }`}
+                                >
+                                    {isMCEnabled ? '🔊 ĐANG BẬT MC' : '🔇 ĐÃ TẮT MC'}
+                                </button>
+                            </div>
+
+                            {/* Ép Tải Lại Trang (Live Update) */}
+                            <div className="flex flex-col gap-1 pt-4 border-t-2 border-dashed border-gray-700">
+                                <span className="text-[10px] text-brand-blue font-bold tracking-widest uppercase mb-2">LIVE UPDATE</span>
+                                <button
+                                    onClick={async () => {
+                                        if (confirm("⚠️ BẠN CÓ CHẮC KHÔNG?\nHành động này sẽ ép TẤT CẢ các thiết bị đang mở trang web (kể cả điện thoại khách) giật Refresh (F5) ngay lập tức.\n\nChỉ dùng khi vừa Update Code mới từ Github.")) {
+                                            toast.loading("Đang phát tín hiệu bắt buộc Tải lại trang...");
+
+                                            await supabase.channel('public:app:settings').send({
+                                                type: 'broadcast',
+                                                event: 'force-reload',
+                                                payload: { timestamp: new Date().toISOString() }
+                                            });
+
+                                            toast.success("Đã phát lệnh thả bom F5 thành công!");
+                                        }
+                                    }}
+                                    className="w-full h-10 border-[3px] border-[#ff0055] flex items-center justify-center font-oswald text-sm text-white font-bold tracking-widest uppercase transition-colors bg-[#ff0055]/20 hover:bg-[#ff0055]"
+                                >
+                                    🔄 ÉP TẢI LẠI TRÀNG TOÀN BỘ CLIENT
+                                </button>
                             </div>
                         </div>
                     )}
