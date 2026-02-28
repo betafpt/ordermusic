@@ -31,6 +31,21 @@ export async function GET(request: Request) {
                 const data = await res.json();
                 title = data.title;
                 thumbnailUrl = data.thumbnail_url;
+
+                // Tải trang Youtube nguyên thủy để bóc tách thời lượng
+                try {
+                    const htmlRes = await fetch(cleanUrl);
+                    const htmlText = await htmlRes.text();
+                    const durationMatch = htmlText.match(/"lengthSeconds":"(\d+)"/);
+                    if (durationMatch && durationMatch[1]) {
+                        const durationSeconds = parseInt(durationMatch[1], 10);
+                        if (durationSeconds > 300) { // Quá 5 phút
+                            return NextResponse.json({ error: 'TOO_LONG_BLOCKED' }, { status: 400 });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Lỗi cào dữ liệu độ dài video YouTube:", e);
+                }
             }
         }
         // Lấy thông tin từ SoundCloud

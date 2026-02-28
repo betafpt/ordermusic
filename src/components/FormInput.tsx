@@ -11,6 +11,7 @@ export default function FormInput() {
     const [loading, setLoading] = useState(false);
     const [showNonstopError, setShowNonstopError] = useState(false);
     const [showJ97Error, setShowJ97Error] = useState(false);
+    const [showTooLongError, setShowTooLongError] = useState(false);
     const { isAdmin } = useAdmin();
 
     useEffect(() => {
@@ -108,6 +109,11 @@ export default function FormInput() {
             else if (error.message && error.message.includes('J97_BLOCKED')) {
                 toast.dismiss(toastId);
                 setShowJ97Error(true);
+            }
+            // Nếu lỗi là bài hát quá dài (> 5 phút)
+            else if (error.message && error.message.includes('TOO_LONG_BLOCKED')) {
+                toast.dismiss(toastId);
+                setShowTooLongError(true);
             }
             // Nếu lỗi là do Spam quá 2 bài
             else if (error.message && error.message.includes('SPAM_BLOCKED')) {
@@ -223,6 +229,32 @@ export default function FormInput() {
                             style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}
                         >
                             QUAY XE 🏃‍♂️
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Bài Hát Quá Dài Hiện Giữa Màn Hình */}
+            {showTooLongError && (
+                <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="brutal-panel bg-brand-blue border-[8px] border-black p-8 md:p-12 max-w-2xl w-full text-center relative overflow-hidden shadow-[20px_20px_0px_0px_rgba(255,255,255,0.1)]">
+                        <div className="absolute inset-0 bg-white opacity-0 animate-[shimmer_0.5s_infinite] pointer-events-none"></div>
+
+                        <h2 className="text-5xl md:text-7xl uppercase text-[#ff0055] tracking-widest leading-[0.9] drop-shadow-[4px_4px_0px_#000] rotate-[-2deg] mb-6 relative z-10" style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}>
+                            QUÁ DÀI DÒNG ⏳
+                        </h2>
+
+                        <p className="font-oswald text-xl md:text-2xl font-black uppercase text-black bg-white p-4 brutal-border rotate-[1deg] mb-8 leading-tight relative z-10">
+                            Bài hát vượt quá giới hạn 5 PHÚT! 📢<br />
+                            <span className="text-lg text-white bg-black px-2 mt-2 inline-block">Xin lỗi, đài mình không có thời gian nhây! Kiếm cớ lẹ đi!</span>
+                        </p>
+
+                        <button
+                            onClick={() => setShowTooLongError(false)}
+                            className="text-3xl md:text-4xl text-white bg-[#ff0055] py-4 px-12 uppercase tracking-widest hover:bg-black hover:text-[#ff0055] transition-colors brutal-border hover:scale-105 active:scale-95 relative z-10"
+                            style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}
+                        >
+                            ĐÃ HIỂU 🫡
                         </button>
                     </div>
                 </div>
