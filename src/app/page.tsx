@@ -29,16 +29,9 @@ export default function Home() {
         <FormInput />
         <QueueList />
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-2 gap-4 mt-2">
-          <div className="brutal-panel bg-brand-pink border-4 border-black p-4 text-white">
-            <p className="text-xs font-oswald font-black uppercase tracking-wider mb-1">NGƯỜI NGHE</p>
-            <p className="text-4xl font-oswald font-bold leading-none">128</p>
-          </div>
-          <div className="brutal-panel bg-brand-panel border-4 border-black p-4 text-white">
-            <p className="text-xs font-oswald font-black uppercase tracking-wider text-gray-400 mb-1">THỜI GIAN CHỜ</p>
-            <p className="text-4xl font-oswald font-bold leading-none">18m</p>
-          </div>
+        {/* Khung chat thay thế Thống kê */}
+        <div className="flex-1 mt-2 min-h-[400px]">
+          <ChatBox />
         </div>
       </div>
     </div>

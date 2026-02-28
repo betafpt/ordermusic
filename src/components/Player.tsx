@@ -8,7 +8,6 @@ import { FiUser, FiPlay, FiPause, FiSkipForward } from 'react-icons/fi';
 import { AiOutlineArrowUp, AiOutlineArrowDown } from 'react-icons/ai';
 import { toast } from 'sonner';
 import { useAdmin } from '@/hooks/useAdmin';
-import ChatBox from './ChatBox';
 
 import AudioVisualizer from './AudioVisualizer';
 
@@ -625,11 +624,6 @@ export default function Player() {
                             </span>
                         </div>
                     </div>
-                </div>
-
-                {/* Khung chat bên phải (Tự động xuống hàng nếu màn hình nhỏ) */}
-                <div className="w-full xl:w-[320px] 2xl:w-[380px] flex-shrink-0">
-                    <ChatBox />
                 </div>
             </div>
         </div>

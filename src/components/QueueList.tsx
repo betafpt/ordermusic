@@ -75,7 +75,7 @@ export default function QueueList() {
                 <span className="text-sm font-oswald tracking-widest text-gray-400 font-bold uppercase">{queue.length} BÀI HÁT CHỜ</span>
             </div>
 
-            <div className="flex flex-col gap-4 max-h-[460px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar pb-2">
+            <div className="flex flex-col gap-4 flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar pb-2 min-h-[300px]">
                 {queue.length === 0 ? (
                     <div className="brutal-panel p-6 text-center text-gray-500">
                         <FiMonitor className="text-4xl mx-auto mb-2 opacity-50" />
