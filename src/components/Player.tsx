@@ -40,38 +40,79 @@ export default function Player() {
     }, [isMCEnabled]);
 
     // Hàm gọi dàn Loa Phường của chị Google lên đọc văn bản, đọc xong trả về Promise resolve
-    const playTTS = (text: string): Promise<void> => {
-        return new Promise((resolve) => {
-            if (!('speechSynthesis' in window)) {
-                console.warn('Trình duyệt không hỗ trợ Text To Speech');
-                resolve();
-                return;
+    const playTTS = async (text: string): Promise<void> => {
+        setIsSpeaking(true);
+
+        try {
+            // Cố gắng gọi API OpenAI tải file MP3 giọng Nova
+            const res = await fetch('/api/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+
+            if (!res.ok) {
+                // Nếu lỗi (ví dụ chưa cài API Key), fallback về giọng đọc máy cũ
+                throw new Error('TTS API failed');
             }
 
-            // Hủy các giọng đọc cũ đang kẹt
-            window.speechSynthesis.cancel();
+            const audioBlob = await res.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'vi-VN'; // Giọng Việt Nam
-            utterance.rate = 1.0; // Tốc độ bình thường
-            utterance.pitch = 1.2; // Giọng hơi cao một chút (tone nữ MC)
+            return new Promise((resolve) => {
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl); // Dọn dẹp RAM
+                    setIsSpeaking(false);
+                    resolve();
+                };
+                audio.onerror = (e) => {
+                    console.error("Lỗi phát sinh khi Audio chạy MP3:", e);
+                    URL.revokeObjectURL(audioUrl);
+                    setIsSpeaking(false);
+                    resolve(); // Vẫn cho đi tiếp để app ko bị đơ
+                };
+                audio.play().catch(e => {
+                    console.error("Lỗi trình duyệt không cho Autoplay Audio MP3:", e);
+                    URL.revokeObjectURL(audioUrl);
+                    setIsSpeaking(false);
+                    resolve();
+                });
+            });
 
-            // Đọc xong thì đi tiếp
-            utterance.onend = () => {
-                setIsSpeaking(false);
-                resolve();
-            };
+        } catch (error) {
+            console.warn("Chuyển về giọng đọc Robot mặc định vì không lấy được Giọng AI OpenAI:", error);
+            // ----------- FALLBACK DÙNG GIỌNG ĐỌC QUÊ MÙA CỦA TRÌNH DUYỆT -----------
+            return new Promise((resolve) => {
+                if (!('speechSynthesis' in window)) {
+                    console.warn('Trình duyệt không hỗ trợ Text To Speech');
+                    setIsSpeaking(false);
+                    resolve();
+                    return;
+                }
 
-            // Xử lý lỗi: Dù lỗi cũng cho đi tiếp để khỏi treo app
-            utterance.onerror = (e) => {
-                console.error("Lỗi đọc TTS:", e);
-                setIsSpeaking(false);
-                resolve();
-            };
+                // Hủy các giọng đọc cũ đang kẹt
+                window.speechSynthesis.cancel();
 
-            setIsSpeaking(true);
-            window.speechSynthesis.speak(utterance);
-        });
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'vi-VN'; // Giọng Việt Nam
+                utterance.rate = 1.0; // Tốc độ bình thường
+                utterance.pitch = 1.2; // Giọng hơi cao một chút
+
+                utterance.onend = () => {
+                    setIsSpeaking(false);
+                    resolve();
+                };
+
+                utterance.onerror = (e) => {
+                    console.error("Lỗi đọc TTS Robot:", e);
+                    setIsSpeaking(false);
+                    resolve();
+                };
+
+                window.speechSynthesis.speak(utterance);
+            });
+        }
     };
 
     const formatTime = (seconds: number) => {
