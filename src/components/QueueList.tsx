@@ -85,9 +85,11 @@ export default function QueueList() {
                     <AnimatePresence>
                         {queue.map((song, index) => (
                             <motion.div
+                                layout
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.3 }}
                                 key={song.id}
                                 className="brutal-panel bg-brand-bg flex items-center justify-between p-3 brutal-shadow-hover cursor-pointer"
                             >

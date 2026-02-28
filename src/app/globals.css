@@ -142,17 +142,17 @@ body {
 
 /* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 10px;
+  width: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background: black;
-  border-left: 2px solid #333;
+  border-left: 1px solid #333;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--color-brand-blue);
-  border: 2px solid black;
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {

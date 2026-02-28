@@ -382,7 +382,7 @@ export default function Player() {
                         <button
                             onClick={skipSong}
                             disabled={!isAdmin}
-                            className="flex-1 brutal-btn-blue bg-brand-panel h-12 flex items-center justify-center text-xl hover:scale-105 active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 brutal-btn-blue bg-brand-panel h-12 flex items-center justify-center text-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                             title={!isAdmin ? "Chỉ Admin mới có quyền gõ Đầu Đĩa" : ""}
                         >
                             <FiSkipForward />
@@ -553,7 +553,7 @@ export default function Player() {
                                                 if (!error) toast.success("Đã Vote cho bài này!");
                                                 else toast.error("Cần cập nhật Database để lưu tên Vote");
                                             }}
-                                            className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-green-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
+                                            className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-green-500 hover:-translate-y-1 hover:shadow-brutal active:translate-y-0 active:shadow-none transition-all group relative"
                                             title="Nghe Rất Cuốn!"
                                         >
                                             <span className="absolute -top-2 -right-2 bg-green-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.upvotes || 0}</span>
@@ -594,7 +594,7 @@ export default function Player() {
                                                 if (!error) toast.success("Đã chê bài hát này!");
                                                 else toast.error("Cần cập nhật Database để lưu tên Vote");
                                             }}
-                                            className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-red-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
+                                            className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-red-500 hover:-translate-y-1 hover:shadow-brutal active:translate-y-0 active:shadow-none transition-all group relative"
                                             title="Nghe Hơi Tệ"
                                         >
                                             <span className="absolute -top-2 -right-2 bg-red-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.downvotes || 0}</span>

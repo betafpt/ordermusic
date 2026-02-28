@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Song } from '@/lib/types';
 import { FiClock } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function HistoryList() {
     const [history, setHistory] = useState<Song[]>([]);
@@ -50,29 +51,34 @@ export default function HistoryList() {
                         <p className="font-oswald tracking-wider">CHƯA CÓ LỊCH SỬ</p>
                     </div>
                 ) : (
-                    history.map((song) => (
-                        <div
-                            key={song.id}
-                            className="flex items-center justify-between p-3 border-2 border-gray-700 bg-black opacity-80"
-                        >
-                            <div className="flex items-center gap-4 overflow-hidden">
-                                <div className="w-10 h-10 grayscale shrink-0 flex items-center justify-center overflow-hidden border border-gray-700">
-                                    {song.thumbnail_url ? (
-                                        <img src={song.thumbnail_url} alt={song.title} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-gray-600" />
-                                    )}
-                                </div>
+                    <AnimatePresence>
+                        {history.map((song) => (
+                            <motion.div
+                                layout
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                key={song.id}
+                                className="flex items-center justify-between p-3 border-2 border-gray-700 bg-black opacity-80"
+                            >
+                                <div className="flex items-center gap-4 overflow-hidden">
+                                    <div className="w-10 h-10 grayscale shrink-0 flex items-center justify-center overflow-hidden border border-gray-700">
+                                        {song.thumbnail_url ? (
+                                            <img src={song.thumbnail_url} alt={song.title} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-gray-600" />
+                                        )}
+                                    </div>
 
-                                <div className="flex flex-col overflow-hidden text-gray-400">
-                                    <p className="font-oswald text-md font-bold tracking-wide truncate uppercase line-through decoration-brand-blue">{song.title}</p>
-                                    <p className="text-[10px] font-oswald tracking-widest uppercase truncate">
-                                        BỞI {song.added_by}
-                                    </p>
+                                    <div className="flex flex-col overflow-hidden text-gray-400">
+                                        <p className="font-oswald text-md font-bold tracking-wide truncate uppercase line-through decoration-brand-blue">{song.title}</p>
+                                        <p className="text-[10px] font-oswald tracking-widest uppercase truncate">
+                                            BỞI {song.added_by}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    ))
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                 )}
             </div>
         </div>

@@ -150,7 +150,7 @@ export default function FormInput() {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 placeholder="Your Username (Ví dụ: @JohnDoe)"
-                                className="w-full h-12 bg-gray-900 border-2 border-brand-pink text-white px-4 focus:outline-none placeholder-gray-600 font-oswald text-lg tracking-wider"
+                                className="w-full h-12 bg-gray-900 border-2 border-brand-pink text-white px-4 focus:outline-none focus:border-brand-pink focus:shadow-[0_0_10px_rgba(255,43,115,0.5)] placeholder-gray-600 font-oswald text-lg tracking-wider transition-all"
                                 disabled={loading}
                             />
                         </div>
@@ -169,7 +169,7 @@ export default function FormInput() {
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
                             placeholder="Dán link YouTube hoặc SoundCloud vào đây..."
-                            className="w-full h-14 bg-brand-panel brutal-border text-white px-4 focus:outline-none focus:ring-0 placeholder-gray-500 font-medium font-sans"
+                            className="w-full h-14 bg-brand-panel brutal-border text-white px-4 focus:outline-none focus:border-brand-blue focus:shadow-[0_0_15px_rgba(29,144,245,0.4)] placeholder-gray-500 font-medium font-sans transition-all"
                             disabled={loading}
                         />
                     </div>

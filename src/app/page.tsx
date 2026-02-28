@@ -7,7 +7,7 @@ import ChatBox from "@/components/ChatBox";
 
 export default function Home() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[2.25fr_1fr] gap-6 lg:gap-8">
+    <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6 xl:gap-8 max-w-[1920px] mx-auto">
       {/* Cột trái: Player & Info & Chat */}
       <div className="flex flex-col gap-6 w-full h-full min-w-0">
 
