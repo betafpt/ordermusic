@@ -81,7 +81,27 @@ export default function Player() {
         return `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
     };
 
+    const currentSongIdRef = useRef<string | null>(null);
     useEffect(() => {
+        currentSongIdRef.current = currentSong?.id || null;
+    }, [currentSong]);
+
+    useEffect(() => {
+        const fetchVoters = async (songId: string) => {
+            const { data, error } = await supabase
+                .from('votes')
+                .select('voter_name, vote_type')
+                .eq('song_id', songId);
+
+            if (!error && data) {
+                const ups = data.filter(v => v.vote_type === 'up').map(v => v.voter_name);
+                const downs = data.filter(v => v.vote_type === 'down').map(v => v.voter_name);
+                setVoters({ up: ups, down: downs });
+            } else {
+                setVoters({ up: [], down: [] });
+            }
+        };
+
         const fetchCurrentSong = async () => {
             const { data, error } = await supabase
                 .from('queue')
@@ -95,6 +115,9 @@ export default function Player() {
                 setCurrentSong(prev => {
                     // Nếu là bài nhảy mới
                     if (prev?.id !== data.id) {
+                        // Gọi ngay fetchVoters để lấy người vote của bài mới
+                        fetchVoters(data.id);
+
                         // Nếu là Host, cho phép Giọng đọc Google lên phát thanh
                         if (isAdmin && isMCEnabledRef.current) {
                             const nameParts = getDisplayTitles(data.title);
@@ -114,7 +137,6 @@ export default function Player() {
 
                     // Nếu id trùng nhau (cùng bài hát đó), nhưng có thay đổi về upvote, downvote từ database Realtime
                     if (prev?.upvotes !== data.upvotes || prev?.downvotes !== data.downvotes) {
-                        fetchVoters(data.id); // Tải lại danh sách người vote khi bộ đếm bị thay đổi
                         return data;
                     }
 
@@ -126,30 +148,32 @@ export default function Player() {
             }
         };
 
-        const fetchVoters = async (songId: string) => {
-            const { data, error } = await supabase
-                .from('votes')
-                .select('voter_name, vote_type')
-                .eq('song_id', songId);
-
-            if (!error && data) {
-                const ups = data.filter(v => v.vote_type === 'up').map(v => v.voter_name);
-                const downs = data.filter(v => v.vote_type === 'down').map(v => v.voter_name);
-                setVoters({ up: ups, down: downs });
-            }
-        };
-
         fetchCurrentSong();
 
-        const channel = supabase
+        const channelQueue = supabase
             .channel('public:queue:player')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => {
                 fetchCurrentSong();
             })
             .subscribe();
 
+        const channelVotes = supabase
+            .channel('public:votes:player')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, (payload) => {
+                const currentId = currentSongIdRef.current;
+                // Chỉ fetch lại nếu vote đó thuộc về bài đang phát
+                if (currentId && ((payload.new as any)?.song_id === currentId || (payload.old as any)?.song_id === currentId)) {
+                    fetchVoters(currentId);
+                } else {
+                    // Nếu không rõ thì cứ gọi cái cập nhật chính
+                    fetchCurrentSong();
+                }
+            })
+            .subscribe();
+
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(channelQueue);
+            supabase.removeChannel(channelVotes);
         };
     }, [isAdmin]);
 
@@ -474,14 +498,18 @@ export default function Player() {
                                         <button
                                             onClick={async () => {
                                                 if (!currentSong) return;
-                                                const voterName = localStorage.getItem('userName') || 'Khách Ẩn Danh';
+                                                const voterName = localStorage.getItem('retro_music_username');
+                                                if (!voterName || !voterName.trim()) {
+                                                    toast.error("Vui lòng nhập Tên của bạn ở khung ĐĂNG BÀI trước khi Vote nhé!", { className: 'font-oswald uppercase tracking-widest' });
+                                                    return;
+                                                }
 
                                                 // Gửi v_name lên theo Hàm SQL mới
                                                 const { error } = await supabase.rpc('increment_upvote', {
                                                     row_id: currentSong.id,
                                                     v_name: voterName
                                                 });
-                                                if (!error) toast.success("Đã Vote 1 vé cho bài này!");
+                                                if (!error) toast.success("Đã Vote cho bài này!");
                                                 else toast.error("Cần cập nhật Database để lưu tên Vote");
                                             }}
                                             className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-green-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
@@ -495,7 +523,7 @@ export default function Player() {
                                         {showUpVotes && voters.up.length > 0 && (
                                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
                                                 <div className="text-[10px] text-green-400 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
-                                                    ĐÃ THẢ TIM:
+                                                    ĐÃ THẢ TIM ({voters.up.length} người):
                                                 </div>
                                                 <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
                                                     {voters.up.map((name, idx) => (
@@ -511,7 +539,11 @@ export default function Player() {
                                         <button
                                             onClick={async () => {
                                                 if (!currentSong) return;
-                                                const voterName = localStorage.getItem('userName') || 'Khách Ẩn Danh';
+                                                const voterName = localStorage.getItem('retro_music_username');
+                                                if (!voterName || !voterName.trim()) {
+                                                    toast.error("Vui lòng nhập Tên của bạn ở khung ĐĂNG BÀI trước khi Vote nhé!", { className: 'font-oswald uppercase tracking-widest' });
+                                                    return;
+                                                }
 
                                                 // Gửi v_name lên theo Hàm SQL mới
                                                 const { error } = await supabase.rpc('increment_downvote', {
@@ -532,7 +564,7 @@ export default function Player() {
                                         {showDownVotes && voters.down.length > 0 && (
                                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
                                                 <div className="text-[10px] text-red-500 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
-                                                    ĐÃ NÉM ĐÁ:
+                                                    ĐÃ NÉM ĐÁ ({voters.down.length} người):
                                                 </div>
                                                 <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
                                                     {voters.down.map((name, idx) => (
