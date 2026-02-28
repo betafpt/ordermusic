@@ -8,30 +8,36 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Text is required' }, { status: 400 });
         }
 
-        const apiKey = process.env.OPENAI_API_KEY;
+        const apiKey = process.env.ELEVENLABS_API_KEY;
 
         if (!apiKey) {
-            console.error('OPENAI_API_KEY is missing in environment variables');
+            console.error('ELEVENLABS_API_KEY is missing in environment variables');
             return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
         }
 
-        const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        // Chọn một Voice ID mặc định của ElevenLabs (Ví dụ: Rachel - 21m00Tcm4TlvDq8ikWAM)
+        const voiceId = '21m00Tcm4TlvDq8ikWAM';
+
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${apiKey}`,
+                'xi-api-key': apiKey,
                 'Content-Type': 'application/json',
+                'Accept': 'audio/mpeg'
             },
             body: JSON.stringify({
-                model: 'tts-1',
-                input: text,
-                voice: 'nova', // Mình chọn Nova (nữ) vì nghe khá nịnh tai và tự nhiên cho làm MC
-                response_format: 'mp3',
+                text: text,
+                model_id: "eleven_multilingual_v2",
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.5
+                }
             }),
         });
 
         if (!response.ok) {
             const errorData = await response.text();
-            console.error('OpenAI API Error:', errorData);
+            console.error('ElevenLabs API Error:', errorData);
             return NextResponse.json({ error: 'Failed to generate speech' }, { status: response.status });
         }
 
