@@ -28,7 +28,7 @@ export default function Leaderboard() {
                 const sortedLeaders = Object.keys(counts)
                     .map(name => ({ name, count: counts[name] }))
                     .sort((a, b) => b.count - a.count)
-                    .slice(0, 5); // Hiển thị Top 5
+                    .slice(0, 20); // Hiển thị Top 20
 
                 setLeaders(sortedLeaders);
             }
@@ -57,7 +57,7 @@ export default function Leaderboard() {
                 <span className="text-sm font-oswald tracking-widest text-brand-pink font-bold uppercase">BẢNG VÀNG</span>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
                 {leaders.length === 0 ? (
                     <div className="brutal-panel p-6 text-center text-gray-500 bg-gray-900 border-gray-700">
                         <FiAward className="text-4xl mx-auto mb-2 opacity-50" />
