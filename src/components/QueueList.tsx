@@ -10,11 +10,6 @@ import { toast } from 'sonner';
 
 export default function QueueList() {
     const [queue, setQueue] = useState<Song[]>([]);
-    // Mảng lưu votes của tất cả các bài: { songId: { up: string[], down: string[] } }
-    const [allVoters, setAllVoters] = useState<Record<string, { up: string[], down: string[] }>>({});
-    // State quản lý xem tooltip đang bật cho bài nào và nút nào
-    const [hoveredVote, setHoveredVote] = useState<{ songId: string, type: 'up' | 'down' } | null>(null);
-
     const { isAdmin } = useAdmin();
 
     // Hiện thông báo toast 1 lần khi kích hoạt Admin Mode
@@ -54,36 +49,7 @@ export default function QueueList() {
                 // Bỏ qua bài đầu tiên vì bài đầu đang hát ở Player
                 .range(1, 100);
 
-            if (!error && data) {
-                setQueue(data);
-                // Sau khi có danh sách chờ, tải danh sách người vote cho TẤT CẢ các bài hát
-                const songIds = data.map(s => s.id);
-                if (songIds.length > 0) {
-                    fetchAllVoters(songIds);
-                }
-            }
-        };
-
-        const fetchAllVoters = async (songIds: string[]) => {
-            const { data, error } = await supabase
-                .from('votes')
-                .select('song_id, voter_name, vote_type')
-                .in('song_id', songIds);
-
-            if (!error && data) {
-                const newVoters: Record<string, { up: string[], down: string[] }> = {};
-                songIds.forEach(id => {
-                    newVoters[id] = { up: [], down: [] };
-                });
-
-                data.forEach(v => {
-                    if (newVoters[v.song_id]) {
-                        newVoters[v.song_id][v.vote_type as 'up' | 'down'].push(v.voter_name);
-                    }
-                });
-
-                setAllVoters(newVoters);
-            }
+            if (!error && data) setQueue(data);
         };
 
         fetchQueue();
@@ -91,10 +57,6 @@ export default function QueueList() {
         const channel = supabase
             .channel('public:queue:list')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => {
-                fetchQueue();
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, () => {
-                // Khi có ai đó vote, gọi fetchQueue để nó kéo lại queue và kéo luôn voters
                 fetchQueue();
             })
             .subscribe();
@@ -143,55 +105,6 @@ export default function QueueList() {
                                         <p className="text-xs font-oswald tracking-widest text-gray-400 uppercase truncate">
                                             ĐĂNG TỪ • {song.added_by}
                                         </p>
-                                    </div>
-                                </div>
-
-                                {/* Thông tin Vote của Bài hát */}
-                                <div className="ml-auto flex items-center gap-2 pr-4 relative">
-                                    <div
-                                        className="relative group/vote flex items-center gap-1 cursor-default px-2 py-1 rounded hover:bg-white/5 transition-colors"
-                                        onMouseEnter={() => setHoveredVote({ songId: song.id, type: 'up' })}
-                                        onMouseLeave={() => setHoveredVote(null)}
-                                    >
-                                        <span className="text-xl">👍</span>
-                                        <span className="font-oswald text-green-400 font-bold">{song.upvotes || 0}</span>
-
-                                        {/* Tooltip UPVOTE */}
-                                        {hoveredVote?.songId === song.id && hoveredVote?.type === 'up' && allVoters[song.id]?.up?.length > 0 && (
-                                            <div className="absolute top-full right-0 mt-2 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
-                                                <div className="text-[10px] text-green-400 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
-                                                    ĐÃ THẢ TIM:
-                                                </div>
-                                                <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
-                                                    {allVoters[song.id].up.map((name, idx) => (
-                                                        <span key={idx} className="text-xs font-oswald text-white uppercase truncate">• {name}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div
-                                        className="relative group/vote flex items-center gap-1 cursor-default px-2 py-1 rounded hover:bg-white/5 transition-colors"
-                                        onMouseEnter={() => setHoveredVote({ songId: song.id, type: 'down' })}
-                                        onMouseLeave={() => setHoveredVote(null)}
-                                    >
-                                        <span className="text-xl">👎</span>
-                                        <span className="font-oswald text-red-500 font-bold">{song.downvotes || 0}</span>
-
-                                        {/* Tooltip DOWNVOTE */}
-                                        {hoveredVote?.songId === song.id && hoveredVote?.type === 'down' && allVoters[song.id]?.down?.length > 0 && (
-                                            <div className="absolute top-full right-0 mt-2 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
-                                                <div className="text-[10px] text-red-500 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
-                                                    ĐÃ NÉM ĐÁ:
-                                                </div>
-                                                <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
-                                                    {allVoters[song.id].down.map((name, idx) => (
-                                                        <span key={idx} className="text-xs font-oswald text-white uppercase truncate">• {name}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
 
