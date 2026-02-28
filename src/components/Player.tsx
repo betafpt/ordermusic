@@ -8,7 +8,7 @@ import { FiUser, FiPlay, FiPause, FiSkipForward } from 'react-icons/fi';
 import { AiOutlineArrowUp, AiOutlineArrowDown } from 'react-icons/ai';
 import { toast } from 'sonner';
 import { useAdmin } from '@/hooks/useAdmin';
-
+import ChatBox from './ChatBox';
 
 import AudioVisualizer from './AudioVisualizer';
 
@@ -98,7 +98,7 @@ export default function Player() {
                         // Nếu là Host, cho phép Giọng đọc Google lên phát thanh
                         if (isAdmin && isMCEnabledRef.current) {
                             const nameParts = getDisplayTitles(data.title);
-                            const textToRead = `Tiếp theo là bài hát: ${nameParts.main}, do ${data.added_by} đóng góp. Mời quý vị thưởng thức!`;
+                            const textToRead = `Bài hát tiếp theo được đóng góp bởi ${data.added_by}`;
 
                             // Ngừng nhạc, gọi loa phường
                             setPlaying(false);
@@ -435,117 +435,128 @@ export default function Player() {
                 </div>
             </div>
 
-            {/* Phần Text to khổng lồ */}
-            <div className="flex flex-col uppercase mt-2 md:mt-4 min-w-0 flex-1 justify-center">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-[1.1] text-wrap break-words tracking-normal pb-2 line-clamp-3" style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}>
-                    {titles.main}
-                </h1>
-                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl leading-[1.1] text-brand-blue italic text-wrap break-words tracking-normal line-clamp-2" style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}>
-                    {titles.sub}
-                </h2>
-            </div>
+            {/* Lớp bọc ngang: Song Info bên trái và Khung chat bên phải */}
+            <div className="flex flex-col xl:flex-row gap-6 mt-2 md:mt-4 min-w-0 flex-1">
+                {/* Phần Cột Trái chứa Tên bài hát và Nút tương tác */}
+                <div className="flex flex-col flex-1 min-w-0 justify-between">
+                    {/* Phần Text to khổng lồ */}
+                    <div className="flex flex-col uppercase justify-center">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-[1.1] text-wrap break-words tracking-normal pb-2 line-clamp-3" style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}>
+                            {titles.main}
+                        </h1>
+                        <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl leading-[1.1] text-brand-blue italic text-wrap break-words tracking-normal line-clamp-2" style={{ fontFamily: 'var(--font-jaro), Impact, sans-serif' }}>
+                            {titles.sub}
+                        </h2>
+                    </div>
 
-            {/* Dòng cuối Submitter & Tương tác Cộng đồng */}
-            <div className="flex items-center justify-between mt-auto pt-6 flex-wrap gap-4 border-t-4 border-black border-dashed">
-                <div className="flex items-center gap-6 flex-wrap">
-                    <div className="flex items-center gap-4 group cursor-pointer transition-transform hover:-translate-y-1">
-                        <div className="w-12 h-12 bg-brand-pink brutal-border flex items-center justify-center text-white relative">
-                            <FiUser size={24} className="animate-pulse" />
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 border-2 border-black rounded-full animate-ping"></div>
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 border-2 border-black rounded-full"></div>
+                    {/* Dòng cuối Submitter & Tương tác Cộng đồng */}
+                    <div className="flex items-center justify-between mt-8 pt-6 flex-wrap gap-4 border-t-4 border-black border-dashed">
+                        <div className="flex items-center gap-6 flex-wrap">
+                            <div className="flex items-center gap-4 group cursor-pointer transition-transform hover:-translate-y-1">
+                                <div className="w-12 h-12 bg-brand-pink brutal-border flex items-center justify-center text-white relative">
+                                    <FiUser size={24} className="animate-pulse" />
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 border-2 border-black rounded-full animate-ping"></div>
+                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 border-2 border-black rounded-full"></div>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-oswald text-gray-500 font-bold uppercase tracking-widest group-hover:text-brand-pink transition-colors">ĐƯỢC ĐÓNG GÓP BỞI</span>
+                                    <span className="font-oswald text-2xl font-black tracking-widest uppercase text-brand-blue group-hover:text-white drop-shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-colors">
+                                        {currentSong ? currentSong.added_by : '@CHƯA_CÓ_AI'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* VOTE BUTTONS đưa lên sát bên Tên Người Đóng Góp */}
+                            {currentSong && (
+                                <div className="flex items-center gap-3 ml-2 lg:ml-6 relative">
+                                    {/* Nút thả tim / Upvote */}
+                                    <div className="relative" onMouseEnter={() => setShowUpVotes(true)} onMouseLeave={() => setShowUpVotes(false)}>
+                                        <button
+                                            onClick={async () => {
+                                                if (!currentSong) return;
+                                                const voterName = localStorage.getItem('userName') || 'Khách Ẩn Danh';
+
+                                                // Gửi v_name lên theo Hàm SQL mới
+                                                const { error } = await supabase.rpc('increment_upvote', {
+                                                    row_id: currentSong.id,
+                                                    v_name: voterName
+                                                });
+                                                if (!error) toast.success("Đã Vote 1 vé cho bài này!");
+                                                else toast.error("Cần cập nhật Database để lưu tên Vote");
+                                            }}
+                                            className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-green-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
+                                            title="Nghe Rất Cuốn!"
+                                        >
+                                            <span className="absolute -top-2 -right-2 bg-green-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.upvotes || 0}</span>
+                                            <span className="text-xl group-hover:animate-bounce">👍</span>
+                                        </button>
+
+                                        {/* Bảng danh sách người UPVOTE (Tooltip) */}
+                                        {showUpVotes && voters.up.length > 0 && (
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
+                                                <div className="text-[10px] text-green-400 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
+                                                    ĐÃ THẢ TIM:
+                                                </div>
+                                                <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
+                                                    {voters.up.map((name, idx) => (
+                                                        <span key={idx} className="text-xs font-oswald text-white uppercase truncate">• {name}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Nút ném đá / Downvote */}
+                                    <div className="relative" onMouseEnter={() => setShowDownVotes(true)} onMouseLeave={() => setShowDownVotes(false)}>
+                                        <button
+                                            onClick={async () => {
+                                                if (!currentSong) return;
+                                                const voterName = localStorage.getItem('userName') || 'Khách Ẩn Danh';
+
+                                                // Gửi v_name lên theo Hàm SQL mới
+                                                const { error } = await supabase.rpc('increment_downvote', {
+                                                    row_id: currentSong.id,
+                                                    v_name: voterName
+                                                });
+                                                if (!error) toast.success("Đã chê bài hát này!");
+                                                else toast.error("Cần cập nhật Database để lưu tên Vote");
+                                            }}
+                                            className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-red-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
+                                            title="Nghe Hơi Tệ"
+                                        >
+                                            <span className="absolute -top-2 -right-2 bg-red-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.downvotes || 0}</span>
+                                            <span className="text-xl group-hover:animate-bounce">👎</span>
+                                        </button>
+
+                                        {/* Bảng danh sách người DOWNVOTE (Tooltip) */}
+                                        {showDownVotes && voters.down.length > 0 && (
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
+                                                <div className="text-[10px] text-red-500 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
+                                                    ĐÃ NÉM ĐÁ:
+                                                </div>
+                                                <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
+                                                    {voters.down.map((name, idx) => (
+                                                        <span key={idx} className="text-xs font-oswald text-white uppercase truncate">• {name}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-oswald text-gray-500 font-bold uppercase tracking-widest group-hover:text-brand-pink transition-colors">ĐƯỢC ĐÓNG GÓP BỞI</span>
-                            <span className="font-oswald text-2xl font-black tracking-widest uppercase text-brand-blue group-hover:text-white drop-shadow-[2px_2px_0px_rgba(0,0,0,1)] transition-colors">
-                                {currentSong ? currentSong.added_by : '@CHƯA_CÓ_AI'}
+
+                        <div className="brutal-border px-6 py-2 bg-black text-brand-pink flex items-center gap-2 hover:bg-brand-pink hover:text-black transition-colors cursor-pointer group animate-bounce-slow">
+                            <span className="font-oswald font-black uppercase text-sm tracking-widest group-hover:scale-110 transition-transform">
+                                • NHẠC TỪ YOUTUBE •
                             </span>
                         </div>
                     </div>
-
-                    {/* VOTE BUTTONS đưa lên sát bên Tên Người Đóng Góp */}
-                    {currentSong && (
-                        <div className="flex items-center gap-3 ml-2 lg:ml-6 relative">
-                            {/* Nút thả tim / Upvote */}
-                            <div className="relative" onMouseEnter={() => setShowUpVotes(true)} onMouseLeave={() => setShowUpVotes(false)}>
-                                <button
-                                    onClick={async () => {
-                                        if (!currentSong) return;
-                                        const voterName = localStorage.getItem('userName') || 'Khách Ẩn Danh';
-
-                                        // Gửi v_name lên theo Hàm SQL mới
-                                        const { error } = await supabase.rpc('increment_upvote', {
-                                            row_id: currentSong.id,
-                                            v_name: voterName
-                                        });
-                                        if (!error) toast.success("Đã Vote 1 vé cho bài này!");
-                                        else toast.error("Cần cập nhật Database để lưu tên Vote");
-                                    }}
-                                    className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-green-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
-                                    title="Nghe Rất Cuốn!"
-                                >
-                                    <span className="absolute -top-2 -right-2 bg-green-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.upvotes || 0}</span>
-                                    <span className="text-xl group-hover:animate-bounce">👍</span>
-                                </button>
-
-                                {/* Bảng danh sách người UPVOTE (Tooltip) */}
-                                {showUpVotes && voters.up.length > 0 && (
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
-                                        <div className="text-[10px] text-green-400 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
-                                            ĐÃ THẢ TIM:
-                                        </div>
-                                        <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
-                                            {voters.up.map((name, idx) => (
-                                                <span key={idx} className="text-xs font-oswald text-white uppercase truncate">• {name}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Nút ném đá / Downvote */}
-                            <div className="relative" onMouseEnter={() => setShowDownVotes(true)} onMouseLeave={() => setShowDownVotes(false)}>
-                                <button
-                                    onClick={async () => {
-                                        if (!currentSong) return;
-                                        const voterName = localStorage.getItem('userName') || 'Khách Ẩn Danh';
-
-                                        // Gửi v_name lên theo Hàm SQL mới
-                                        const { error } = await supabase.rpc('increment_downvote', {
-                                            row_id: currentSong.id,
-                                            v_name: voterName
-                                        });
-                                        if (!error) toast.success("Đã chê bài hát này!");
-                                        else toast.error("Cần cập nhật Database để lưu tên Vote");
-                                    }}
-                                    className="w-12 h-12 brutal-border bg-gray-900 text-white flex items-center justify-center hover:bg-red-500 hover:-translate-y-1 active:translate-y-0 transition-all group relative"
-                                    title="Nghe Hơi Tệ"
-                                >
-                                    <span className="absolute -top-2 -right-2 bg-red-500 border-2 border-black text-[10px] font-black w-6 h-6 flex items-center justify-center text-white z-10">{currentSong?.downvotes || 0}</span>
-                                    <span className="text-xl group-hover:animate-bounce">👎</span>
-                                </button>
-
-                                {/* Bảng danh sách người DOWNVOTE (Tooltip) */}
-                                {showDownVotes && voters.down.length > 0 && (
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-[200px] z-50 bg-black brutal-border p-2">
-                                        <div className="text-[10px] text-red-500 font-bold uppercase tracking-widest border-b-2 border-dashed border-gray-700 pb-1 mb-1">
-                                            ĐÃ NÉM ĐÁ:
-                                        </div>
-                                        <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto custom-scrollbar">
-                                            {voters.down.map((name, idx) => (
-                                                <span key={idx} className="text-xs font-oswald text-white uppercase truncate">• {name}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </div>
 
-                <div className="brutal-border px-6 py-2 bg-black text-brand-pink flex items-center gap-2 hover:bg-brand-pink hover:text-black transition-colors cursor-pointer group animate-bounce-slow">
-                    <span className="font-oswald font-black uppercase text-sm tracking-widest group-hover:scale-110 transition-transform">
-                        • NHẠC TỪ YOUTUBE •
-                    </span>
+                {/* Khung chat bên phải */}
+                <div className="w-full xl:w-[350px] min-h-[300px] flex-shrink-0 flex flex-col">
+                    <ChatBox />
                 </div>
             </div>
         </div>
