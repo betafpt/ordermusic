@@ -42,76 +42,53 @@ export default function Player() {
     const playTTS = async (text: string): Promise<void> => {
         setIsSpeaking(true);
 
-        try {
-            // Cố gắng gọi API OpenAI tải file MP3 giọng Nova
-            const res = await fetch('/api/tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
-
-            if (!res.ok) {
-                // Nếu lỗi (ví dụ chưa cài API Key), fallback về giọng đọc máy cũ
-                throw new Error('TTS API failed');
+        return new Promise((resolve) => {
+            if (!('speechSynthesis' in window)) {
+                console.warn('Trình duyệt không hỗ trợ Text To Speech');
+                setIsSpeaking(false);
+                resolve();
+                return;
             }
 
-            const audioBlob = await res.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
+            // Hủy các giọng đọc cũ đang kẹt
+            window.speechSynthesis.cancel();
 
-            return new Promise((resolve) => {
-                audio.onended = () => {
-                    URL.revokeObjectURL(audioUrl); // Dọn dẹp RAM
-                    setIsSpeaking(false);
-                    resolve();
-                };
-                audio.onerror = (e) => {
-                    console.error("Lỗi phát sinh khi Audio chạy MP3:", e);
-                    URL.revokeObjectURL(audioUrl);
-                    setIsSpeaking(false);
-                    resolve(); // Vẫn cho đi tiếp để app ko bị đơ
-                };
-                audio.play().catch(e => {
-                    console.error("Lỗi trình duyệt không cho Autoplay Audio MP3:", e);
-                    URL.revokeObjectURL(audioUrl);
-                    setIsSpeaking(false);
-                    resolve();
-                });
-            });
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'vi-VN';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.2;
 
-        } catch (error) {
-            console.warn("Chuyển về giọng đọc Robot mặc định vì không lấy được Giọng AI OpenAI:", error);
-            // ----------- FALLBACK DÙNG GIỌNG ĐỌC QUÊ MÙA CỦA TRÌNH DUYỆT -----------
-            return new Promise((resolve) => {
-                if (!('speechSynthesis' in window)) {
-                    console.warn('Trình duyệt không hỗ trợ Text To Speech');
-                    setIsSpeaking(false);
-                    resolve();
-                    return;
+            // Tìm giọng Tiếng Việt Nữ nghe hay nhất có thể
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                // Ưu tiên các giọng nữ của Google hoặc Microsoft (thường nghe tự nhiên hơn)
+                const vietnameseVoices = voices.filter(v => v.lang.includes('vi') || v.lang.includes('VN'));
+
+                const preferredVoice = vietnameseVoices.find(v =>
+                    v.name.includes('Google') ||
+                    v.name.includes('HoaiMy') ||
+                    v.name.includes('Lien') ||
+                    v.name.toLowerCase().includes('female')
+                ) || vietnameseVoices[0];
+
+                if (preferredVoice) {
+                    utterance.voice = preferredVoice;
                 }
+            }
 
-                // Hủy các giọng đọc cũ đang kẹt
-                window.speechSynthesis.cancel();
+            utterance.onend = () => {
+                setIsSpeaking(false);
+                resolve();
+            };
 
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'vi-VN'; // Giọng Việt Nam
-                utterance.rate = 1.0; // Tốc độ bình thường
-                utterance.pitch = 1.2; // Giọng hơi cao một chút
+            utterance.onerror = (e) => {
+                console.error("Lỗi đọc TTS Robot:", e);
+                setIsSpeaking(false);
+                resolve();
+            };
 
-                utterance.onend = () => {
-                    setIsSpeaking(false);
-                    resolve();
-                };
-
-                utterance.onerror = (e) => {
-                    console.error("Lỗi đọc TTS Robot:", e);
-                    setIsSpeaking(false);
-                    resolve();
-                };
-
-                window.speechSynthesis.speak(utterance);
-            });
-        }
+            window.speechSynthesis.speak(utterance);
+        });
     };
 
     const formatTime = (seconds: number) => {
@@ -125,6 +102,8 @@ export default function Player() {
     useEffect(() => {
         currentSongIdRef.current = currentSong?.id || null;
     }, [currentSong]);
+
+    const lastPlayedSongIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         const fetchVoters = async (songId: string) => {
@@ -158,20 +137,26 @@ export default function Player() {
                         // Gọi ngay fetchVoters để lấy người vote của bài mới
                         fetchVoters(data.id);
 
-                        // Nếu là Host, cho phép Giọng đọc Google lên phát thanh
-                        if (isAdmin && isMCEnabledRef.current) {
-                            const nameParts = getDisplayTitles(data.title);
-                            const textToRead = `Bài hát tiếp theo được đóng góp bởi ${data.added_by}`;
+                        // CHỈ CHẠY MC NẾU BÀI NÀY CHƯA TỪNG ĐƯỢC GIỚI THIỆU
+                        if (lastPlayedSongIdRef.current !== data.id) {
+                            lastPlayedSongIdRef.current = data.id;
 
-                            // Ngừng nhạc, gọi loa phường
-                            setPlaying(false);
-                            playTTS(textToRead).then(() => {
-                                setPlaying(true); // Đọc xong thả rông cho hát
-                            });
-                        } else {
-                            // Của khán giả thì cứ tự Play
-                            setPlaying(true);
+                            // Nếu là Host, cho phép Giọng đọc Google lên phát thanh
+                            if (isAdmin && isMCEnabledRef.current) {
+                                const nameParts = getDisplayTitles(data.title);
+                                const textToRead = `Bài hát tiếp theo được đóng góp bởi ${data.added_by}`;
+
+                                // Ngừng nhạc, gọi loa phường
+                                setPlaying(false);
+                                playTTS(textToRead).then(() => {
+                                    setPlaying(true); // Đọc xong thả rông cho hát
+                                });
+                            } else {
+                                // Của khán giả thì cứ tự Play
+                                setPlaying(true);
+                            }
                         }
+
                         return data;
                     }
 
@@ -454,17 +439,15 @@ export default function Player() {
                                 <span className="text-[10px] text-brand-blue font-bold tracking-widest uppercase mb-2">LIVE UPDATE</span>
                                 <button
                                     onClick={async () => {
-                                        if (confirm("⚠️ BẠN CÓ CHẮC KHÔNG?\nHành động này sẽ ép TẤT CẢ các thiết bị đang mở trang web (kể cả điện thoại khách) giật Refresh (F5) ngay lập tức.\n\nChỉ dùng khi vừa Update Code mới từ Github.")) {
-                                            toast.loading("Đang phát tín hiệu bắt buộc Tải lại trang...");
+                                        toast.loading("Đang phát tín hiệu bắt buộc Tải lại trang...");
 
-                                            await supabase.channel('public:app:settings').send({
-                                                type: 'broadcast',
-                                                event: 'force-reload',
-                                                payload: { timestamp: new Date().toISOString() }
-                                            });
+                                        await supabase.channel('public:app:settings').send({
+                                            type: 'broadcast',
+                                            event: 'force-reload',
+                                            payload: { timestamp: new Date().toISOString() }
+                                        });
 
-                                            toast.success("Đã phát lệnh thả bom F5 thành công!");
-                                        }
+                                        toast.success("Đã phát lệnh thả bom F5 thành công!");
                                     }}
                                     className="w-full h-10 border-[3px] border-[#ff0055] flex items-center justify-center font-oswald text-sm text-white font-bold tracking-widest uppercase transition-colors bg-[#ff0055]/20 hover:bg-[#ff0055]"
                                 >
