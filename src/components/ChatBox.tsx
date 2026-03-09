@@ -13,6 +13,41 @@ interface ChatMessage {
     created_at: string;
 }
 
+// Hàm mượn Web Audio API để phát tiếng "Ting Ting" nhẹ nhàng
+const playTingSound = () => {
+    try {
+        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (!AudioContextClass) return;
+        const ctx = new AudioContextClass();
+
+        const playOscillator = (startTime: number, freq: number) => {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            osc.type = 'sine'; // Âm mượt như chuông
+            osc.frequency.setValueAtTime(freq, startTime);
+
+            // Định hình âm lượng: tăng nhanh (attack) -> giảm dần (decay)
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4);
+
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            osc.start(startTime);
+            osc.stop(startTime + 0.4);
+        };
+
+        // Ting 1 (Cao)
+        playOscillator(ctx.currentTime, 880);
+        // Ting 2 (Cao hơn chút xíu)
+        playOscillator(ctx.currentTime + 0.15, 1108.73);
+    } catch (e) {
+        console.error("Audio play failed", e);
+    }
+};
+
 export default function ChatBox() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
@@ -52,6 +87,13 @@ export default function ChatBox() {
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' },
                 (payload) => {
                     const newMessage = payload.new as ChatMessage;
+
+                    // Phát tiếng chuông báo tin nhắn mới nếu đó không phải tin mình gửi
+                    const currentName = localStorage.getItem('retro_music_username');
+                    if (newMessage.username !== currentName) {
+                        playTingSound();
+                    }
+
                     setMessages(prev => {
                         // Giữ tối đa 50 tin nhắn cho mượt
                         const updated = [...prev, newMessage];
@@ -105,7 +147,7 @@ export default function ChatBox() {
             if (error) throw error;
             // Xóa ở giao diện ngay cho mượt, không cần đợi socket
             setMessages(prev => prev.filter(msg => msg.id !== id));
-        } catch (error) {
+        } catch {
             toast.error('LỖI KHI XÓA TIN NHẮN');
         }
     };

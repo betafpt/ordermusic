@@ -202,11 +202,24 @@ export default function Player() {
         };
     }, [isAdmin]);
 
+    const isHandlingEndRef = useRef<boolean>(false);
+
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
+    // Gắn thêm reset để khi đổi nhạc không bị lấy dư âm onProgress của bài trước đó
+    useEffect(() => {
+        isHandlingEndRef.current = false;
+        setDuration(0);
+        setCurrentTime(0);
+        setProgress(0);
+    }, [currentSong?.id]);
+
     const handleEnded = async () => {
+        if (isHandlingEndRef.current) return;
+        isHandlingEndRef.current = true;
+
         setProgress(0);
         if (currentSong && isHost) {
             await supabase.from('queue').update({ is_played: true }).eq('id', currentSong.id);
@@ -214,6 +227,9 @@ export default function Player() {
     };
 
     const skipSong = async () => {
+        if (isHandlingEndRef.current) return;
+        isHandlingEndRef.current = true;
+
         setProgress(0);
         if (currentSong && (isHost || isAdmin)) {
             await supabase.from('queue').update({ is_played: true }).eq('id', currentSong.id);
